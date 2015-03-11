@@ -37,4 +37,16 @@ if params=={}:
     xbmcutil.init_usage_reporting(__scriptid__)
 provider = joj.JojContentProvider()
 
-xbmcprovider.XBMCMultiResolverContentProvider(provider,settings,__addon__).run(params)
+class XBMCJojContentProvider(xbmcprovider.XBMCMultiResolverContentProvider):
+    def render_default(self, item):
+        if item['type'] == 'showoff':
+            item['title'] = item['title'] + ' [B](Nevys)[/B]'
+        elif item['type'] == "showon7d":
+            item['title'] = item['title'] + ' [B][COLOR red](7d)[/COLOR][/B]'
+        if item['type'] == 'topvideo' or item['type'] == 'newvideo':
+            self.render_video(item)
+        else:
+            self.render_dir(item)
+            
+        
+XBMCJojContentProvider(provider,settings,__addon__).run(params)
