@@ -224,11 +224,11 @@ class JojContentProvider(ContentProvider):
         item['title'] = "Filmy"
         item['url'] = url + '/?type=filmy'
         self._filter(result, item)
-        # live streams are not working
-        # item = self.video_item()
-        #item['title'] = 'Live'
-        #item['url'] = url.replace('archiv', 'live')
-        #self._filter(result, item)
+        if 'senzi' not in url:
+            item = self.video_item()
+            item['title'] = 'Live'
+            item['url'] = url.replace('archiv', 'live')
+            self._filter(result, item)
         return result
 
     def list_base_page(self, base_page, top=False, new=False):
@@ -334,6 +334,7 @@ class JojContentProvider(ContentProvider):
         return result
 
     def rtmp_url(self, playpath, pageurl, type=None, balance=None):
+        server = 'n11.joj.sk'
         if balance is not None and type is not None:
             try:
                 nodes = balance.find('project[@id="joj"]').find('balance[@type="%s"]' % (type))
@@ -344,9 +345,6 @@ class JojContentProvider(ContentProvider):
             except Exception as e:
                 self.error("cannot get stream server: %s" % (str(e)))
                 self.info("using default stream server")
-                server = 'n11.joj.sk'
-        else:
-            server = 'n11.joj.sk'
         swfurl = 'http://player.joj.sk/JojPlayer.swf?no_cache=137034'
         return 'rtmp://' + server + ' playpath=' + playpath + ' pageUrl=' + pageurl + ' swfUrl=' + swfurl + \
                ' swfVfy=true'
@@ -356,11 +354,15 @@ class JojContentProvider(ContentProvider):
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
-            for quality in ['360', '540', '720']:
+            channel = re.search(r'http://(\w+)\.joj\.sk', url).group(1)
+            for original, replacement in {'www': 'joj', 'plus': 'jojplus'}.items():
+                if channel == original:
+                    channel = replacement
+                    break
+            for quality, resolution in {'lq': '180p', 'mq': '360p', 'hq': '540p'}.items():
                 item = self.video_item()
-                item['quality'] = quality + 'p'
-                item['url'] = self.rtmp_url(fix_path(re.search('http://(\w+).joj.sk', url).group(1)) + '-' + quality,
-                                            url)
+                item['quality'] = resolution
+                item['url'] = 'http://http-stream.joj.sk/joj/' + channel + '/index-' + quality + '.m3u8'
                 result.append(item)
         else:
             data = util.request(url)
@@ -380,5 +382,5 @@ class JojContentProvider(ContentProvider):
                 item['url'] = self.rtmp_url(video.attrib.get('path'), playlist.attrib.get('url'),
                                             video.attrib.get('type'), balance)
                 result.append(item)
-        result.reverse()
+            result.reverse()
         return select_cb(result)
