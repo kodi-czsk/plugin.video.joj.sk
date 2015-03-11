@@ -132,7 +132,7 @@ class JojContentProvider(ContentProvider):
                 return self.list_base_page(util.request(self.base_url), new=True)
             else:
                 self.debug("listing base url")
-                return self.list_base_url(util.request(self.base_url), top=True, new=True)
+                return self.list_base_page(util.request(self.base_url), top=True, new=True)
         elif len(s_path) == 1:
             if s_path[0] not in ("archiv.html", "plus-archiv.html",
                                  "wau-archiv.html", "senzi-archiv.html"):
