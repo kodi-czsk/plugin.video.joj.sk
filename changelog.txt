@@ -1,3 +1,5 @@
+[B]1.2.4[/B]
+- fixed cs-ma-talent video resolving, thanks to @jose1711
 [B]1.2.3[/B]
 - fixed some series listing (Divoke kone)
 [B]1.2.2[/B]
