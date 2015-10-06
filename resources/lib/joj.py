@@ -366,7 +366,7 @@ class JojContentProvider(ContentProvider):
                 result.append(item)
         else:
             data = util.request(url)
-            playerdata = re.search(r'<div\ class=\"jn-player\"(.+?)>', data).group(1)
+            playerdata = re.search(r'<div\ class=\"(player )?jn-player\"(.+?)>', data, re.DOTALL).group(2).replace('\n',' ')
             pageid = re.search(r'data-pageid=[\'\"]([^\'\"]+)', playerdata).group(1)
             basepath = re.search(r'data-basepath=[\'\"]([^\'\"]+)', playerdata).group(1)
             videoid = re.search(r'data-id=[\'\"]([^\'\"]+)', playerdata).group(1)
