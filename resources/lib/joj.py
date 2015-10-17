@@ -38,7 +38,7 @@ NEVYSIELANE_ITER_RE = '<li.*?><a href=\"(?P<url>[^"]+).*?title=\"(?P<title>[^"]+
 EPISODE_START = '<div class="episodeListing relative overflowed">'
 EPISODE_END = '<div class="centered pagerDots"></div>'
 EPISODE_ITER_RE = '<li[^>]*>\s+?<a href=\"(?P<url>[^"]+)\" title=\"(?P<title>[^"]+)\">\s+?<span class=\"date\">(?P<date>[^<]+)</span>(.+?)<span class=\"episode\">(?P<episode>[^0]{1}[0-9]*)</span>(.+?)</li>'
-EPISODE_ITER_RE2 = '<article>.+?<a href="(?P<url>.+?)" title="(?P<title>.+?)">.+?<time.+?>(?P<date>.+?)</time>.+?</article>'
+EPISODE_ITER_RE2 = '<article>.+?<a href="(?P<url>.+?)" title="(?P<title>.+?)">.+?<time.+?>(<.+?>|</.+?>){0,2} *(?P<date>.+?)</time>.+?</article>'
 SERIES_START = EPISODE_START
 SERIES_END = EPISODE_END
 SERIES_START2 = '<nav class="e-pager">'
