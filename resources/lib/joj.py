@@ -171,7 +171,7 @@ class JojContentProvider(ContentProvider):
     def subcategories(self, base_url):
         live = self.video_item()
         live['title'] = '[B]Live[/B]'
-        live['url'] = base_url + 'live.html'
+        live['url'] = base_url + '/live.html'
         return [live] + self.list_base(base_url + '/archiv-filter')
 
     def rtmp_url(self, playpath, pageurl, type=None, balance=None):
@@ -197,8 +197,8 @@ class JojContentProvider(ContentProvider):
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
-            channel = re.search(r'http://(\w+)\.joj\.sk', url).group(1)
-            for original, replacement in {'www': 'joj', 'plus': 'jojplus'}.items():
+            channel = urlparse.urlparse(url).netloc.split('.')[0]
+            for original, replacement in {'joj': 'joj', 'plus': 'jojplus'}.items():
                 if channel == original:
                     channel = replacement
                     break
