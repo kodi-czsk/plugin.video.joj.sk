@@ -134,13 +134,15 @@ class JojContentProvider(ContentProvider):
                     if 'season' in groupdict and 'episode' in groupdict:
                         # joj sometimes don't provide season/episode numbers
                         # for latest episodes, so mark them as 0.
-                        season = archive_list_match.group('season')
-                        if not season:
+                        try:
+                            season = int(archive_list_match.group('season'))
+                        except Exception:
                             season = 0
-                        episode = archive_list_match.group('episode')
-                        if not episode:
+                        try:
+                            episode = int(archive_list_match.group('episode'))
+                        except Exception:
                             episode = 0
-                        item['title'] = "(S%02d E%02d) - %s"%(int(season), int(episode),
+                        item['title'] = "(S%02d E%02d) - %s"%(season, episode,
                                 archive_list_match.group('title'))
                     else:
                         item['title'] = "(%s) - %s"%(archive_list_match.group('date'),
