@@ -62,7 +62,7 @@ class TestJoj(unittest.TestCase):
             self._test_list_episodes(url)
 
     def test_vod_resolving(self):
-        urls = ['http://velkenoviny.joj.sk/archiv/2016-07-01-noviny-tv-joj']
+        urls = ['https://www.joj.sk/inkognito/archiv/2017-09-28-inkognito']
         for url in urls:
             res = self.provider.resolve({'url':url})
             print "'%s' - resolved %d videos" %(url, len(res))
