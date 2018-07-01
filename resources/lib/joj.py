@@ -31,8 +31,8 @@ import util
 from provider import ContentProvider
 
 BASE_URL = {"JOJ":  "http://joj.sk",
-        "JOJ Plus": "http://plus.joj.sk",
-        "WAU":      "http://wau.joj.sk"}
+            "JOJ Plus": "http://plus.joj.sk",
+            "WAU":      "http://wau.joj.sk"}
 
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
@@ -53,6 +53,12 @@ class JojContentProvider(ContentProvider):
         if url.startswith('//'):
             url = 'http:'+ url
         return url
+
+    def _fix_url_next(self, urlOld,urlNew):
+        urlNew = self._fix_url(urlNew)
+        firstPart = urlOld.split('?')[0]
+        secondPart = urlNew.split('?')[1].replace('&amp;','&')
+        return firstPart+'?'+secondPart
 
     def _list_article(self, data):
         url_and_title_match = re.search(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', data)
@@ -100,7 +106,11 @@ class JojContentProvider(ContentProvider):
                 item['url'] = "%s?seasonId=%s" % (url.split('#')[0], season_id)
                 result.append(item)
         if list_episodes:
-            episodes_data = util.substr(data, r'<section>', '</section>')
+            if url.find('-page=') > 0 and url.find('-listing') > 0:
+                episodes_data = data
+            else:
+                episodes_data = util.substr(data, r'<section>', '</section>')
+
             for article_match in re.finditer(r'<article class="b-article title-xs article-lp">(.+?)</article>', episodes_data, re.DOTALL):
                 article_dict = self._list_article(article_match.group(1))
                 if article_dict is not None:
@@ -110,11 +120,11 @@ class JojContentProvider(ContentProvider):
                     result.append(item)
 
             title_to_key = {
-             'Dátum':'date',
-             'Názov epizódy':'title',
-             'Sledovanosť':'seen',
-             'Séria':'season',
-             'Epizóda':'episode'}
+                'Dátum':'date',
+                'Názov epizódy':'title',
+                'Sledovanosť':'seen',
+                'Séria':'season',
+                'Epizóda':'episode'}
             headers_match = re.search('<div class="i head e-video-categories">(.+?)</div>', episodes_data, re.DOTALL)
             if headers_match is not None:
                 headers = []
@@ -146,19 +156,22 @@ class JojContentProvider(ContentProvider):
                         except Exception:
                             episode = 0
                         item['title'] = "(S%02d E%02d) - %s"%(season, episode,
-                                archive_list_match.group('title'))
+                                                              archive_list_match.group('title'))
                     else:
                         item['title'] = "(%s) - %s"%(archive_list_match.group('date'),
-                                archive_list_match.group('title'))
+                                                     archive_list_match.group('title'))
                     item['url'] = self._fix_url(archive_list_match.group('url'))
                     result.append(item)
 
-            pagination_data = util.substr(data, '<nav>','</nav>')
-            next_match = re.search(r'a href="(?P<url>[^"]+)" aria-label="Ďalej"', pagination_data, re.DOTALL)
+            if url.find('-page=') > 0 and url.find('-listing') > 0:
+                pagination_data = data
+            else:
+                pagination_data = util.substr(data, r'<section>', '</section>')
+            next_match = re.search(r'a.*title="Načítaj viac".*href="(?P<url>[^"]+)"', pagination_data, re.DOTALL)
             if next_match:
                 item = self.dir_item()
                 item['type'] = 'next'
-                item['url'] = self._fix_url(next_match.group(1))
+                item['url'] = self._fix_url_next(url,next_match.group(1))
                 result.append(item)
         return result
 
