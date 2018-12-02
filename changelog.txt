@@ -1,3 +1,5 @@
+[B]1.3.8[/B]
+- fix episodes listing (i.e. Za sklom 1.season)
 [B]1.3.7[/B]
 - fix video listing
 [B]1.3.6[/B]
