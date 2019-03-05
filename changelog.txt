@@ -1,3 +1,6 @@
+[B]1.3.9[/B]
+- quick fix for broken archives
+- archives are now global
 [B]1.3.8[/B]
 - fix episodes listing (i.e. Za sklom 1.season)
 [B]1.3.7[/B]

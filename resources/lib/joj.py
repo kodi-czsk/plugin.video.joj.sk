@@ -66,9 +66,9 @@ class JojContentProvider(ContentProvider):
             return None
         item = {}
         item['title'] = url_and_title_match.group('title')
-        #print 'title = ', item['title']
+        # print 'title = %s ' % item['title']
         item['url'] = self._fix_url(url_and_title_match.group('url'))
-        #print 'url = ', item['url']
+        # print 'url = %s' % item['url']
         subtitle_match = re.search(r'<h4 class="subtitle">.+?<span class="date">([^<]+)',
                                    data, re.DOTALL)
         if subtitle_match:
@@ -82,13 +82,12 @@ class JojContentProvider(ContentProvider):
         result = []
         self.info("list_base %s"% url)
         data = util.request(url)
-        data = util.substr(data, '<section class="s s-container s-videozone s-archive s-tv-archive">', '<div class="s-footer-wrap">')
-        for article_match in re.finditer('<article class="b-article article-md media-on">(.+?)</article>', data, re.DOTALL):
+        for article_match in re.finditer('<article class="b-show title-md">(.+?)</article>', data, re.DOTALL):
+            print article_match.group(1)
             article_dict = self._list_article(article_match.group(1))
             if article_dict is not None:
                 item = self.dir_item()
                 item.update(article_dict)
-                item['url'] = '/'.join(item['url'].split('/')[:-2]) + "#s"
                 result.append(item)
         return result
 
@@ -189,19 +188,29 @@ class JojContentProvider(ContentProvider):
             if not result:
                 result = self.list_show(url, list_episodes=True)
             return result
+        if url_parsed.fragment == "archive":
+            result = self.archive()
+            return result
         return self.list_show(url, list_episodes=True)
 
     def categories(self):
-        return[
-            self.dir_item("JOJ", BASE_URL["JOJ"]),
-            self.dir_item("JOJ Plus", BASE_URL["JOJ Plus"]),
-            self.dir_item("WAU", BASE_URL["WAU"])]
+        result = []
+        for k, v in BASE_URL.items():
+            item = self.video_item()
+            item['title'] = k + ' (LIVE)'
+            item['url'] = v + '/live.html'
+            result.append(item)
+        result.append(self.dir_item("Archív", BASE_URL["JOJ"] + "/#archive"))
+        return result
 
     def subcategories(self, base_url):
         live = self.video_item()
         live['title'] = '[B]Live[/B]'
         live['url'] = base_url + '/live.html'
-        return [live] + self.list_base(base_url + '/archiv-filter')
+        return [live]
+
+    def archive(self):
+        return self.list_base('https://videoportal.joj.sk/relacie/vsetko')
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
