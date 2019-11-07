@@ -229,7 +229,7 @@ class JojContentProvider(ContentProvider):
 
             labels_str = re.search(r'var labels = {(.+?)};', player_str, re.DOTALL).group(1)
             #print 'labels:', labels_str
-            renditions = re.search(r'renditions: \[(.+?)\]', labels_str).group(1).replace("'","").split(',')
+            renditions = re.search(r'renditions: \[(.+?)\]', labels_str).group(1).replace("'","").replace('"', '').split(',')
             #print 'renditions: ', renditions
 
             settings_str = re.search(r'var settings = {(.+?)};', player_str, re.DOTALL).group(1)
