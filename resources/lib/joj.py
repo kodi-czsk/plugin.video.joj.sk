@@ -30,9 +30,14 @@ from xml.etree.ElementTree import fromstring
 import util
 from provider import ContentProvider
 
-BASE_URL = {"JOJ":  "http://joj.sk",
+BASE_URL = {"JOJ":  "https://www.joj.sk",
             "JOJ Plus": "http://plus.joj.sk",
             "WAU":      "http://wau.joj.sk"}
+
+LIVE_URL = {"JOJ":  "http://joj.sk",
+            "JOJ Plus": "http://plus.joj.sk",
+            "WAU":      "http://wau.joj.sk"}
+
 
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
@@ -192,16 +197,19 @@ class JojContentProvider(ContentProvider):
         return self.list_show(url, list_episodes=True)
 
     def categories(self):
-        return[
-            self.dir_item("JOJ", BASE_URL["JOJ"]),
-            self.dir_item("JOJ Plus", BASE_URL["JOJ Plus"]),
-            self.dir_item("WAU", BASE_URL["WAU"])]
+        result = []
+        for k, v in LIVE_URL.items():
+            item = self.video_item()
+            item['title'] = k + ' (LIVE)'
+            item['url'] = v + '/live.html'
+            result.append(item)
+        result.append(self.dir_item("JOJ archív", BASE_URL["JOJ"]))
+        result.append(self.dir_item("JOJ Plus archív", BASE_URL["JOJ Plus"]))
+        result.append(self.dir_item("WAU archív", BASE_URL["WAU"]))
+        return result
 
     def subcategories(self, base_url):
-        live = self.video_item()
-        live['title'] = '[B]Live[/B]'
-        live['url'] = base_url + '/live.html'
-        return [live] + self.list_base(base_url + '/archiv-filter')
+        return self.list_base(base_url + '/archiv-filter')
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
