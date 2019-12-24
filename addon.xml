@@ -12,7 +12,7 @@
     <summary lang="cs">joj.sk</summary>
     <summary lang="sk">joj.sk</summary>
     <description lang="en">Watch online TV archive from joj.sk</description>
-    <description lang="cs">Sledujte online TV archiv zo serveru joj.sk</description>
+    <description lang="cs">Sledujte online TV archiv ze serveru joj.sk</description>
     <description lang="sk">Sledujte online TV archív zo serveru joj.sk</description>
     <platform>all</platform>
     <source>https://github.com/kodi-czsk/plugin.video.joj.sk</source>
