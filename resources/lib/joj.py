@@ -59,11 +59,11 @@ class JojContentProvider(ContentProvider):
             url = 'http:'+ url
         return url
 
-    def _fix_url_next(self, urlOld,urlNew):
-        urlNew = self._fix_url(urlNew)
-        firstPart = urlOld.split('?')[0]
-        secondPart = urlNew.split('?')[1].replace('&amp;','&')
-        return firstPart+'?'+secondPart
+    def _fix_url_next(self, url_old, url_new):
+        url_new = self._fix_url(url_new)
+        first_part = url_old.split('?')[0]
+        second_part = url_new.split('?')[1].replace('&amp;', '&')
+        return first_part+'?'+second_part
 
     def _list_article(self, data):
         url_and_title_match = re.search(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', data)
@@ -168,16 +168,15 @@ class JojContentProvider(ContentProvider):
                                                      archive_list_match.group('title'))
                     item['url'] = self._fix_url(archive_list_match.group('url'))
                     result.append(item)
-
             if url.find('-page=') > 0 and url.find('-listing') > 0:
                 pagination_data = data
             else:
                 pagination_data = util.substr(data, r'<section>', '</section>')
-            next_match = re.search(r'a.*title="Načítaj viac".*href="(?P<url>[^"]+)"', pagination_data, re.DOTALL)
+            next_match = re.search(r'a.*data-href="(?P<url>[^"]+)".*title="Načítaj viac"', pagination_data, re.DOTALL)
             if next_match:
                 item = self.dir_item()
                 item['type'] = 'next'
-                item['url'] = self._fix_url_next(url,next_match.group(1))
+                item['url'] = self._fix_url_next(url, next_match.group(1))
                 result.append(item)
         return result
 
