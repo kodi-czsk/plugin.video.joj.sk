@@ -78,7 +78,7 @@ class JojContentProvider(ContentProvider):
                                    data, re.DOTALL)
         if subtitle_match:
             item['subtitle'] = subtitle_match.group(1)
-        img_match = re.search(r'<img src="([^"]+)"', data)
+        img_match = re.search(r'<img\s+data-original="([^"]+)"', data)
         if img_match:
             item['img'] = self._fix_url(img_match.group(1))
         return item
