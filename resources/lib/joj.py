@@ -241,7 +241,7 @@ class JojContentProvider(ContentProvider):
 
             settings_str = re.search(r'var settings = {(.+?)};', player_str, re.DOTALL).group(1)
             #print 'settings:', settings_str
-            poster_url = re.search(r'poster: \"(.+?)\"', settings_str).group(1)
+            poster_url = re.search(r'poster: \[\"(.+?)\"[^\]]*\]', settings_str).group(1)
             #print 'poster_url:', poster_url
 
             bitrates_str = re.search(r'var src = {(.+?)};', player_str, re.DOTALL).group(1)
