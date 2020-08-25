@@ -78,7 +78,12 @@ class JojContentProvider(ContentProvider):
                                    data, re.DOTALL)
         if subtitle_match:
             item['subtitle'] = subtitle_match.group(1)
-        img_match = re.search(r'<img\s+data-original="([^"]+)"', data)
+        episodenum_match = re.search(r"""<h4\ class="subtitle">.+?<div\ class="col\ text-right">
+                                      <span\ class="date">([^<]+)""",
+                                      data, re.DOTALL | re.VERBOSE)
+        if episodenum_match:
+            item['episodenum'] = episodenum_match.group(1)
+        img_match = re.search(r'<img\s+[^>]+data-original="([^"]+)"', data)
         if img_match:
             item['img'] = self._fix_url(img_match.group(1))
         return item
@@ -100,6 +105,8 @@ class JojContentProvider(ContentProvider):
     def list_show(self, url, list_series=False, list_episodes=False):
         result = []
         self.info("list_show %s"%(url))
+        print('list_series: %s' % list_series)
+        print('list_episodes: %s' % list_episodes)
         data = util.request(url)
         if list_series:
             series_data = util.substr(data, r'<select onchange="return selectSeason(this.value);">', '</select>')
@@ -111,20 +118,35 @@ class JojContentProvider(ContentProvider):
                 item['title'] = serie_match.group('title')
                 item['url'] = "%s?seasonId=%s" % (url.split('#')[0], season_id)
                 result.append(item)
-        if list_episodes:
-            if url.find('-page=') > 0 and url.find('-listing') > 0:
-                episodes_data = data
-            else:
-                episodes_data = util.substr(data, r'<section>', '</section>')
 
-            for article_match in re.finditer(r'<article class="b-article title-xs article-lp">(.+?)</article>', episodes_data, re.DOTALL):
+            # check related clips on joj.sk
+            joj_data = util.request(url.replace('https://videoportal.joj.sk', 'https://joj.sk'))
+            menu_data = util.substr(joj_data, r'ul class="e-subnav">', '</ul')
+            for menu_item in re.finditer(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', menu_data):
+                item = self.dir_item()
+                item['title'] = menu_item.group('title')
+                item['url'] = menu_item.group('url')
+                result.append(item)
+          
+        if list_episodes:
+            episodes_data = data
+            # clips on joj.sk
+            it1 = re.finditer(r'<article class="b-article article-md media-on">(.+?)</article>',
+                              data,
+                              re.DOTALL)
+            # videos on videoportal.joj.sk
+            it2 = re.finditer(r'<article class="b-article title-xs article-lp">(.+?)</article>',
+                              data,
+                              re.DOTALL)
+            for article_match in list(it1) + list(it2):
                 article_dict = self._list_article(article_match.group(1))
                 if article_dict is not None:
                     item = self.video_item()
                     item.update(article_dict)
-                    item['title'] += ' ' + item.get('subtitle','')
+                    item['title'] += ' ' + item.get('subtitle', '')
+                    if 'episodenum' in item.keys():
+                        item['title'] += '/' + item.get('episodenum', '')
                     result.append(item)
-
             title_to_key = {
                 'Dátum':'date',
                 'Názov epizódy':'title',
@@ -168,15 +190,27 @@ class JojContentProvider(ContentProvider):
                                                      archive_list_match.group('title'))
                     item['url'] = self._fix_url(archive_list_match.group('url'))
                     result.append(item)
+            '''
             if url.find('-page=') > 0 and url.find('-listing') > 0:
                 pagination_data = data
             else:
                 pagination_data = util.substr(data, r'<section>', '</section>')
+            '''
+            pagination_data = data
+            # match on videoportal.joj.sk site
             next_match = re.search(r'a.*data-href="(?P<url>[^"]+)".*title="Načítaj viac"', pagination_data, re.DOTALL)
             if next_match:
                 item = self.dir_item()
                 item['type'] = 'next'
                 item['url'] = self._fix_url_next(url, next_match.group(1))
+                result.append(item)
+            # match on joj.sk site
+            print(pagination_data)
+            next_match = re.search(r'a href="(?P<url>[^"]+)" aria-label="Ďalej"', pagination_data, re.DOTALL)
+            if next_match:
+                item = self.dir_item()
+                item['type'] = 'next'
+                item['url'] = next_match.group('url')
                 result.append(item)
         return result
 
@@ -189,9 +223,7 @@ class JojContentProvider(ContentProvider):
                 return []
             return self.subcategories(url)
         if url_parsed.fragment == "s":
-            result = self.list_show(url, list_series=True)
-            if not result:
-                result = self.list_show(url, list_episodes=True)
+            result = self.list_show(url, list_episodes=True, list_series=True)
             return result
         return self.list_show(url, list_episodes=True)
 
@@ -228,8 +260,16 @@ class JojContentProvider(ContentProvider):
                 result.append(item)
         else:
             data = util.request(url)
-            data = util.substr(data, '<section class="s-section py-0 s-video-detail">', '</section>')
-            iframe_url = re.search('<iframe src="([^"]+)"', data).group(1)
+            vdata = util.substr(data, '<section class="s-section py-0 s-video-detail">', '</section>')
+            # maybe this is video on joj.sk (not on videoportal.joj.sk)?
+            if not vdata:
+                vdata = util.substr(data, '<div class="b-article-video">', '</div>')
+            # .. still joj.sk but different format
+            if not vdata:
+                vdata = util.substr(data, '<div class="intro">', '</div>')
+            if not vdata:
+                vdata = util.substr(data, '<div style="position:relative !important;', '</div>')
+            iframe_url = re.search('<iframe src="([^"]+)"', vdata).group(1)
             #print 'iframe_url = ', iframe_url
             player_str = urllib2.urlopen(iframe_url).read()
             #print player_str
