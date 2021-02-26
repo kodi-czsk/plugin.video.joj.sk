@@ -24,7 +24,7 @@ sys.path.append( os.path.join ( os.path.dirname(__file__),'resources','lib') )
 import joj
 import xbmcprovider,xbmcaddon,xbmcutil,xbmc
 import util
-import traceback,urllib2
+import traceback
 
 __scriptid__   = 'plugin.video.joj.sk'
 __scriptname__ = 'joj.sk'

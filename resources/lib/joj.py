@@ -21,10 +21,10 @@
 # */
 
 import re
-import urllib2
-import cookielib
+import urllib
+from http import cookiejar
 import random
-import urlparse
+from urllib.parse import urlparse
 from xml.etree.ElementTree import fromstring
 
 import util
@@ -42,13 +42,13 @@ LIVE_URL = {"JOJ":  "http://joj.sk",
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
         ContentProvider.__init__(self, 'joj.sk', 'http://www.joj.sk/', username, password, filter)
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
-        urllib2.install_opener(opener)
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar.LWPCookieJar()))
+        urllib.request.install_opener(opener)
         self.debugging = True
 
     def debug(self, text):
         if self.debugging:
-            print "[DEBUG][%s] %s" % (self.name, text)
+            print("[DEBUG][%s] %s" % (self.name, text))
 
     def capabilities(self):
         return ['categories', 'resolve', '!download']
@@ -71,9 +71,9 @@ class JojContentProvider(ContentProvider):
             return None
         item = {}
         item['title'] = url_and_title_match.group('title')
-        #print 'title = ', item['title']
+        #print('title = ', item['title'])
         item['url'] = self._fix_url(url_and_title_match.group('url'))
-        #print 'url = ', item['url']
+        #print('url = ', item['url'])
         subtitle_match = re.search(r'<h4 class="subtitle">.+?<span class="date">([^<]+)',
                                    data, re.DOTALL)
         if subtitle_match:
@@ -121,7 +121,11 @@ class JojContentProvider(ContentProvider):
 
             # check related clips on joj.sk
             joj_data = util.request(url.replace('https://videoportal.joj.sk', 'https://joj.sk'))
-            menu_data = util.substr(joj_data, r'ul class="e-subnav">', '</ul')
+            try:
+                d_joj_data = joj_data.decode("utf-8")
+            except:
+                d_joj_data = joj_data
+            menu_data = util.substr(d_joj_data, r'ul class="e-subnav">', '</ul')
             for menu_item in re.finditer(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', menu_data):
                 item = self.dir_item()
                 item['title'] = menu_item.group('title')
@@ -159,7 +163,7 @@ class JojContentProvider(ContentProvider):
                 for span_match in re.finditer('<span[^>]*>([^<]+)</span>', headers_match.group(1)):
                     key = title_to_key.get(span_match.group(1))
                     if key is None:
-                        print "undefined key", span_match.group(1)
+                        print("undefined key", span_match.group(1))
                         headers.append("")
                     else:
                         headers.append(key)
@@ -216,10 +220,10 @@ class JojContentProvider(ContentProvider):
 
     def list(self, url):
         self.info("list %s" % url)
-        url_parsed = urlparse.urlparse(url)
+        url_parsed = urlparse(url)
         if not url_parsed.path:
             if url not in BASE_URL.values():
-                print "not joj.sk url!"
+                print("not joj.sk url!")
                 return []
             return self.subcategories(url)
         if url_parsed.fragment == "s":
@@ -247,7 +251,7 @@ class JojContentProvider(ContentProvider):
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
-            channel = urlparse.urlparse(url).netloc.split('.')[0]
+            channel = urlparse(url).netloc.split('.')[0]
             if channel in 'plus':
                 channel = 'jojplus'
             channel_quality_map = {'joj': ('360', '540', '720'),
@@ -270,22 +274,23 @@ class JojContentProvider(ContentProvider):
             if not vdata:
                 vdata = util.substr(data, '<div style="position:relative !important;', '</div>')
             iframe_url = re.search('<iframe src="([^"]+)"', vdata).group(1)
-            #print 'iframe_url = ', iframe_url
-            player_str = urllib2.urlopen(iframe_url).read()
-            #print player_str
+            #print('iframe_url = ', iframe_url)
+            player_str = urllib.request.urlopen(iframe_url).read()
+            #print(player_str)
+            d_player_str = player_str.decode("utf-8")
 
-            labels_str = re.search(r'var labels = {(.+?)};', player_str, re.DOTALL).group(1)
-            #print 'labels:', labels_str
+            labels_str = re.search(r'var labels = {(.+?)};', d_player_str, re.DOTALL).group(1)
+            #print('labels:', labels_str)
             renditions = re.search(r'renditions: \[(.+?)\]', labels_str).group(1).replace("'","").replace('"', '').split(',')
-            #print 'renditions: ', renditions
+            #print('renditions: ', renditions)
 
-            settings_str = re.search(r'var settings = {(.+?)};', player_str, re.DOTALL).group(1)
-            #print 'settings:', settings_str
+            settings_str = re.search(r'var settings = {(.+?)};', d_player_str, re.DOTALL).group(1)
+            #print('settings:', settings_str)
             poster_url = re.search(r'poster: \[\"(.+?)\"[^\]]*\]', settings_str).group(1)
-            #print 'poster_url:', poster_url
+            #print('poster_url:', poster_url)
 
-            bitrates_str = re.search(r'var src = {(.+?)};', player_str, re.DOTALL).group(1)
-            #print 'bitrates:', bitrates_str
+            bitrates_str = re.search(r'var src = {(.+?)};', d_player_str, re.DOTALL).group(1)
+            #print('bitrates:', bitrates_str)
             bitrates_url = re.search(r'"mp4": \[(.+?)\]', bitrates_str, re.DOTALL).group(1)
             bitrates_url = bitrates_url.replace("'","").replace('\n','').replace(' ','').split(',')
             for idx, url in enumerate(bitrates_url):

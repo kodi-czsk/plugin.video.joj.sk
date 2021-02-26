@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.joj.sk" name="joj.sk" provider-name="Maros Ondrasek" version="1.4.0">
+<addon id="plugin.video.joj.sk" name="joj.sk" provider-name="Maros Ondrasek" version="1.4.1">
   <requires>
-    <import addon="xbmc.python" version="2.1.0" />
+    <import addon="xbmc.python" version="3.0.0" />
     <import addon="script.module.stream.resolver" version="1.6.24" />
   </requires>
   <extension library="default.py" point="xbmc.python.pluginsource" provides="video">
@@ -16,5 +16,8 @@
     <description lang="sk">Sledujte online TV archív zo serveru joj.sk</description>
     <platform>all</platform>
     <source>https://github.com/kodi-czsk/plugin.video.joj.sk</source>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
   </extension>
 </addon>
