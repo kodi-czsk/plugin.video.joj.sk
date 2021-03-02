@@ -1,6 +1,6 @@
 # Kodi Media Center language file
-# Addon Name: rtvs.sk
-# Addon id: plugin.video.rtvs.sk
+# Addon Name: joj.sk
+# Addon id: plugin.video.joj.sk
 msgid ""
 msgstr ""
 
