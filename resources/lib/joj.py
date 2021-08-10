@@ -260,7 +260,7 @@ class JojContentProvider(ContentProvider):
             for quality in channel_quality_map[channel]:
                 item = self.video_item()
                 item['quality'] = quality + 'p'
-                item['url'] = 'https://nn.geo.joj.sk/live/hls/' + channel + '-' + quality + '.m3u8'
+                item['url'] = 'https://live.cdn.joj.sk/live/hls/' + channel + '-' + quality + '.m3u8'
                 result.append(item)
         else:
             data = util.request(url)
