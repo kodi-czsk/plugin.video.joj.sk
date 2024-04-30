@@ -1,6 +1,7 @@
 Kodi plugin pre prehrávanie tv JOJ - joj.sk
+
 - umožňuje prehrávanie živého vysielania
-~~- umožňuje prehrávanie archívu z joj, plus a wau webov~~ -> _joj presunula archív na platformu play joj_
+- ~~umožňuje prehrávanie archívu z joj, plus a wau webov~~ -> _joj presunula archív na platformu play joj_
 
 Plugin JOJ
 
