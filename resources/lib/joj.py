@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 # /*
 # *      Copyright (C) 2013 Maros Ondrasek
+# *                    2022 Jastrab
 # *
 # *
 # *  This Program is free software; you can redistribute it and/or modify
@@ -34,15 +35,17 @@ BASE_URL = {"JOJ":  "https://www.joj.sk",
             "JOJ Plus": "http://plus.joj.sk",
             "WAU":      "http://wau.joj.sk"}
 
-LIVE_URL = {"JOJ":  "http://joj.sk",
+LIVE_URL = {"JOJ":      "http://joj.sk",
             "JOJ Plus": "http://plus.joj.sk",
             "WAU":      "http://wau.joj.sk",
-            "JOJ24":      "https://joj24.noviny.sk/"}
+            "JOJ24":    "https://joj24.noviny.sk/",
+            "JOJSport":    "https://jojsport.joj.sk/"}
 
 JOJ_NAMES = {'JOJ': 'JOJ',
             'JOJ Plus': 'PLUS', 
             'WAU': 'WAU',
-            'JOJ24': 'JOJ24'}
+            'JOJ24': 'JOJ24',
+            'JOJSport': 'JOJ Šport'}
 
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
@@ -292,7 +295,11 @@ class JojContentProvider(ContentProvider):
         data = self.liveInfo()
         for k, v in LIVE_URL.items():
             item = self.video_item()
-            item['title'] = k + ' (LIVE)'
+            name = JOJ_NAMES.get(k)
+            # item['title'] = k + ' (LIVE)'
+
+            item['title'] = name + ' [COLOR FFFFFF80](LIVE)[/COLOR]'
+            # item['title'] = name + ' [COLOR FFB2D4F5](LIVE)[/COLOR]'
             item['url'] = v + '/live.html'
 
             if k in JOJ_NAMES:
@@ -301,9 +308,11 @@ class JojContentProvider(ContentProvider):
                     item['plot'] = data[kk]['desc']
                     item['img'] = data[kk]['img']
             result.append(item)
-        result.append(self.dir_item("JOJ archív", BASE_URL["JOJ"]))
-        result.append(self.dir_item("JOJ Plus archív", BASE_URL["JOJ Plus"]))
-        result.append(self.dir_item("WAU archív", BASE_URL["WAU"]))
+
+        oops = ' [COLOR FFFF4D4D](nefunkčné)[/COLOR]'
+        result.append(self.dir_item("JOJ archív" + oops, BASE_URL["JOJ"]))
+        result.append(self.dir_item("JOJ Plus archív" + oops, BASE_URL["JOJ Plus"]))
+        result.append(self.dir_item("WAU archív" + oops, BASE_URL["WAU"]))
         return result
 
     def subcategories(self, base_url):
@@ -340,6 +349,12 @@ class JojContentProvider(ContentProvider):
         title = 'JOJ24'
         data_new[title] = {'img': img_joj24, 'title': title, 'desc': ''}
 
+        img_joj24 = 'https://img.joj.sk/rx/d7254e8d-ffdd-44a6-b9cc-766e9e7cce6b'
+        title = 'JOJ Šport'
+        data_new[title] = {'img': img_joj24, 'title': title, 'desc': ''}
+
+        
+
         return data_new
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
@@ -348,21 +363,32 @@ class JojContentProvider(ContentProvider):
         url = item['url']
         if url.endswith('live.html'):
             channel = urlparse(url).netloc.split('.')[0]
-            sou = 'hls'
-            if channel in 'plus':
-                channel = 'jojplus'
-            if channel == 'joj24':
-                channel = 'joj_news'
-                sou = 'andromeda'
-            channel_quality_map = {'joj': ('360', '540', '720'),
-                                   'jojplus': ('360', '540'),
-                                   'wau': ('360', '540'),
-                                   'joj_news': ('404', '720', '1080')
+            # sou = 'hls'
+            sou = 'andromeda'
+            # if channel in 'plus':
+            #     channel = 'jojplus'
+            # if channel == 'joj24':
+            #     channel = 'joj_news'
+                # sou = 'andromeda'            
+            channel_quality_map = {'joj': ('404', '720', '1080'),
+                                   'plus': ('404', '720', '1080'),
+                                   'wau': ('404', '720', '1080'),
+                                   'news': ('404', '720', '1080'),
+                                   'jojsport': ('540', '720', '1080')
                                    }
+            # https://live.cdn.joj.sk/live/andromeda/nrsr/live.m3u8
             for quality in channel_quality_map[channel]:
                 item = self.video_item()
                 item['quality'] = quality + 'p'
-                item['url'] = 'https://live.cdn.joj.sk/live/' + sou + '/' + channel + '-' + quality + '.m3u8'
+                self.info(channel)
+                if channel == 'jojsport':
+                    item['url'] = 'https://nn.geo.joj.sk/huste/23b50fc7-3a41-43a8-bfdd-120f51203756/23b50fc7-3a41-43a8-bfdd-120f51203756/23b50fc7-3a41-43a8-bfdd-120f51203756-{}p/playlist.m3u8'.format(quality)
+                else:
+                    # item['url'] = 'https://live.cdn.joj.sk/live/' + sou + '/' + channel + '-' + quality + '.m3u8'
+                    item['url'] = 'https://live.cdn.joj.sk/live/{}/{}-{}.m3u8'.format(sou, channel, quality)
+                self.info(item)
+                # https://live.cdn.joj.sk/live/andromeda/joj-720.m3u8
+                # https://live.cdn.joj.sk/live/andromeda/plus-404.m3u8
                 result.append(item)
         else:
             data = util.request(url)
