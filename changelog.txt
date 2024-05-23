@@ -1,3 +1,5 @@
+[B]1.4.6[/B] 23.05.2024
+- add JOJ Cinema
 [B]1.4.5[/B] 30.04.2024
 - fix JOJ live
 - fix PLUS live
