@@ -1,3 +1,19 @@
+[B]1.4.5[/B] 30.04.2024
+- fix JOJ live
+- fix PLUS live
+- fix WAU live
+- upd JOJ24 live
+- add JOJ Sport live
+- (all changes by @jastrab)
+- poznamka: archiv uz nefukcny -> play.joj.sk
+[B]1.4.4[/B]
+- add JOJ24 live
+- add info tv live
+- add logos tv live
+- upd high quality images 
+- upd listing shows in archive
+- fix listing shows in archive
+- (all changes by @jastrab)
 [B]1.4.0[/B]
 - show episode number
 - also show related clips on joj.sk

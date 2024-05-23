@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 # /*
 # *      Copyright (C) 2013 Maros Ondrasek
+# *                    2022 Jastrab
 # *
 # *
 # *  This Program is free software; you can redistribute it and/or modify
@@ -21,10 +22,10 @@
 # */
 
 import re
-import urllib2
-import cookielib
+import urllib
+from http import cookiejar
 import random
-import urlparse
+from urllib.parse import urlparse
 from xml.etree.ElementTree import fromstring
 
 import util
@@ -34,21 +35,28 @@ BASE_URL = {"JOJ":  "https://www.joj.sk",
             "JOJ Plus": "http://plus.joj.sk",
             "WAU":      "http://wau.joj.sk"}
 
-LIVE_URL = {"JOJ":  "http://joj.sk",
+LIVE_URL = {"JOJ":      "http://joj.sk",
             "JOJ Plus": "http://plus.joj.sk",
-            "WAU":      "http://wau.joj.sk"}
+            "WAU":      "http://wau.joj.sk",
+            "JOJ24":    "https://joj24.noviny.sk/",
+            "JOJSport":    "https://jojsport.joj.sk/"}
 
+JOJ_NAMES = {'JOJ': 'JOJ',
+            'JOJ Plus': 'PLUS', 
+            'WAU': 'WAU',
+            'JOJ24': 'JOJ24',
+            'JOJSport': 'JOJ Šport'}
 
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
         ContentProvider.__init__(self, 'joj.sk', 'http://www.joj.sk/', username, password, filter)
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.LWPCookieJar()))
-        urllib2.install_opener(opener)
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar.LWPCookieJar()))
+        urllib.request.install_opener(opener)
         self.debugging = True
 
     def debug(self, text):
         if self.debugging:
-            print "[DEBUG][%s] %s" % (self.name, text)
+            print("[DEBUG][%s] %s" % (self.name, text))
 
     def capabilities(self):
         return ['categories', 'resolve', '!download']
@@ -71,9 +79,9 @@ class JojContentProvider(ContentProvider):
             return None
         item = {}
         item['title'] = url_and_title_match.group('title')
-        #print 'title = ', item['title']
+        #print('title = ', item['title'])
         item['url'] = self._fix_url(url_and_title_match.group('url'))
-        #print 'url = ', item['url']
+        #print('url = ', item['url'])
         subtitle_match = re.search(r'<h4 class="subtitle">.+?<span class="date">([^<]+)',
                                    data, re.DOTALL)
         if subtitle_match:
@@ -88,13 +96,43 @@ class JojContentProvider(ContentProvider):
             item['img'] = self._fix_url(img_match.group(1))
         return item
 
+    def _list_archive(self, data):
+        # url_and_title_match = re.search(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', data)
+        url_and_title_match = re.search(r'<a href="(?P<url>[^"]+)".*?title="(?P<title>[^"]+)".*?<img\s+[^>]+data-original="(?P<img>[^"]+)".*?<article.*?<a href="(?P<url2>[^"]+)"', data, re.S)
+        if url_and_title_match is None:
+            return None
+        item = {}
+        item['title'] = url_and_title_match.group('title')
+        #print('title = ', item['title'])
+        item['url'] = self._fix_url(url_and_title_match.group('url2'))
+        #print('url = ', item['url'])
+        subtitle_match = re.search(r'<h4 class="subtitle">.+?<span class="date">([^<]+)',
+                                   data, re.DOTALL)
+        if subtitle_match:
+            item['subtitle'] = subtitle_match.group(1)
+        episodenum_match = re.search(r"""<h4\ class="subtitle">.+?<div\ class="col\ text-right">
+                                      <span\ class="date">([^<]+)""",
+                                      data, re.DOTALL | re.VERBOSE)
+        if episodenum_match:
+            item['episodenum'] = episodenum_match.group(1)
+        # img_match = re.search(r'<img\s+[^>]+data-original="([^"]+)"', data)
+        # if img_match:
+            # item['img'] = self._fix_url(img_match.group(1))
+        img = self._fix_url(url_and_title_match.group('img'))
+        img = re.sub('r100x100', 'r600x340n', img)  #zvysenie kvality obrazka z 100px na 600px
+        item['img'] = img
+        return item
+
     def list_base(self, url):
         result = []
         self.info("list_base %s"% url)
         data = util.request(url)
-        data = util.substr(data, '<section class="s s-container s-videozone s-archive s-tv-archive">', '<div class="s-footer-wrap">')
-        for article_match in re.finditer('<article class="b-article article-md media-on">(.+?)</article>', data, re.DOTALL):
-            article_dict = self._list_article(article_match.group(1))
+        # data = util.substr(data, '<section class="s s-container s-videozone s-archive s-tv-archive">', '<div class="s-footer-wrap">')
+        data = util.substr(data, '<section class="s s-container s-videozone s-archive-content">', '<div class="s-footer-wrap">')
+        # for article_match in re.finditer('<article class="b-article article-md media-on">(.+?)</article>', data, re.DOTALL):
+        # for article_match in re.finditer('<div class="col-xs-12 col-md-3 w-title">(.+?)</div>', data, re.DOTALL):
+        for article_match in re.finditer('<div class="col-xs-12 col-md-3 w-title">(.+?)</article>', data, re.DOTALL):
+            article_dict = self._list_archive(article_match.group(1))
             if article_dict is not None:
                 item = self.dir_item()
                 item.update(article_dict)
@@ -105,8 +143,9 @@ class JojContentProvider(ContentProvider):
     def list_show(self, url, list_series=False, list_episodes=False):
         result = []
         self.info("list_show %s"%(url))
-        print('list_series: %s' % list_series)
-        print('list_episodes: %s' % list_episodes)
+        # print('list_series: %s' % list_series)
+        # print('list_episodes: %s' % list_episodes)
+        # print ('url=', url)
         data = util.request(url)
         if list_series:
             series_data = util.substr(data, r'<select onchange="return selectSeason(this.value);">', '</select>')
@@ -116,15 +155,22 @@ class JojContentProvider(ContentProvider):
                 if not season_id:
                     season_id=""
                 item['title'] = serie_match.group('title')
+                # item_title = serie_match.group('title')
+
                 item['url'] = "%s?seasonId=%s" % (url.split('#')[0], season_id)
                 result.append(item)
 
             # check related clips on joj.sk
             joj_data = util.request(url.replace('https://videoportal.joj.sk', 'https://joj.sk'))
-            menu_data = util.substr(joj_data, r'ul class="e-subnav">', '</ul')
+            try:
+                d_joj_data = joj_data.decode("utf-8")
+            except:
+                d_joj_data = joj_data
+            menu_data = util.substr(d_joj_data, r'ul class="e-subnav">', '</ul')
             for menu_item in re.finditer(r'<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"', menu_data):
                 item = self.dir_item()
                 item['title'] = menu_item.group('title')
+                # item_title = menu_item.group('title')
                 item['url'] = menu_item.group('url')
                 result.append(item)
           
@@ -143,9 +189,24 @@ class JojContentProvider(ContentProvider):
                 if article_dict is not None:
                     item = self.video_item()
                     item.update(article_dict)
-                    item['title'] += ' ' + item.get('subtitle', '')
+                    # item['title'] += ' ' + item.get('subtitle', '')
+                    # item['title'] += ' [COLOR FFB2D4F5]%s[/COLOR]'%item.get('subtitle', '')
+                    item_subtitle = item.get('subtitle', '')
                     if 'episodenum' in item.keys():
-                        item['title'] += '/' + item.get('episodenum', '')
+                        # item['title'] += '/' + item.get('episodenum', '')
+                        # item['title'] += ' | ' + item.get('episodenum', '')
+                        item_episode = item.get('episodenum', '')
+                        t = re.search('([\d]{1,})', item_episode)
+                        if t:
+                            item_episode = int(t.group(1))
+
+                        # item_subtitle =item.get('episodenum', '')
+                        t = re.search('([\d]{1,})\. ?([\d]{1,2})\. ?([\d]{4})', item_subtitle)
+                        if t:
+                            d, m, y = int(t.group(1)), int(t.group(2)), int(t.group(3))
+                            item_subtitle = '{:02d}.{:02d}.{}'.format(d, m, y)
+
+                    item['title'] = 'Epizóda {:02d}: [COLOR FFFFAA00]{}[/COLOR] | [COLOR FFB2D4F5]{}[/COLOR]'.format(item_episode, item['title'], item_subtitle)
                     result.append(item)
             title_to_key = {
                 'Dátum':'date',
@@ -159,7 +220,7 @@ class JojContentProvider(ContentProvider):
                 for span_match in re.finditer('<span[^>]*>([^<]+)</span>', headers_match.group(1)):
                     key = title_to_key.get(span_match.group(1))
                     if key is None:
-                        print "undefined key", span_match.group(1)
+                        print("undefined key", span_match.group(1))
                         headers.append("")
                     else:
                         headers.append(key)
@@ -172,6 +233,7 @@ class JojContentProvider(ContentProvider):
                 for archive_list_match in re.finditer(archive_list_pattern, episodes_data, re.MULTILINE):
                     item = self.video_item()
                     groupdict = archive_list_match.groupdict()
+                    # print (archive_list_match)
                     if 'season' in groupdict and 'episode' in groupdict:
                         # joj sometimes don't provide season/episode numbers
                         # for latest episodes, so mark them as 0.
@@ -186,7 +248,7 @@ class JojContentProvider(ContentProvider):
                         item['title'] = "(S%02d E%02d) - %s"%(season, episode,
                                                               archive_list_match.group('title'))
                     else:
-                        item['title'] = "(%s) - %s"%(archive_list_match.group('date'),
+                        item['title'] = ">>>(%s) - %s"%(archive_list_match.group('date'),
                                                      archive_list_match.group('title'))
                     item['url'] = self._fix_url(archive_list_match.group('url'))
                     result.append(item)
@@ -205,7 +267,7 @@ class JojContentProvider(ContentProvider):
                 item['url'] = self._fix_url_next(url, next_match.group(1))
                 result.append(item)
             # match on joj.sk site
-            print(pagination_data)
+            # print(pagination_data)
             next_match = re.search(r'a href="(?P<url>[^"]+)" aria-label="Ďalej"', pagination_data, re.DOTALL)
             if next_match:
                 item = self.dir_item()
@@ -216,10 +278,11 @@ class JojContentProvider(ContentProvider):
 
     def list(self, url):
         self.info("list %s" % url)
-        url_parsed = urlparse.urlparse(url)
+        # print ('list url', url)
+        url_parsed = urlparse(url)
         if not url_parsed.path:
             if url not in BASE_URL.values():
-                print "not joj.sk url!"
+                print("not joj.sk url!")
                 return []
             return self.subcategories(url)
         if url_parsed.fragment == "s":
@@ -229,34 +292,103 @@ class JojContentProvider(ContentProvider):
 
     def categories(self):
         result = []
+        data = self.liveInfo()
         for k, v in LIVE_URL.items():
             item = self.video_item()
-            item['title'] = k + ' (LIVE)'
+            name = JOJ_NAMES.get(k)
+            # item['title'] = k + ' (LIVE)'
+
+            item['title'] = name + ' [COLOR FFFFFF80](LIVE)[/COLOR]'
+            # item['title'] = name + ' [COLOR FFB2D4F5](LIVE)[/COLOR]'
             item['url'] = v + '/live.html'
+
+            if k in JOJ_NAMES:
+                kk = JOJ_NAMES[k]
+                if kk:
+                    item['plot'] = data[kk]['desc']
+                    item['img'] = data[kk]['img']
             result.append(item)
-        result.append(self.dir_item("JOJ archív", BASE_URL["JOJ"]))
-        result.append(self.dir_item("JOJ Plus archív", BASE_URL["JOJ Plus"]))
-        result.append(self.dir_item("WAU archív", BASE_URL["WAU"]))
+
+        oops = ' [COLOR FFFF4D4D](nefunkčné)[/COLOR]'
+        result.append(self.dir_item("JOJ archív" + oops, BASE_URL["JOJ"]))
+        result.append(self.dir_item("JOJ Plus archív" + oops, BASE_URL["JOJ Plus"]))
+        result.append(self.dir_item("WAU archív" + oops, BASE_URL["WAU"]))
         return result
 
     def subcategories(self, base_url):
-        return self.list_base(base_url + '/archiv-filter')
+        # return self.list_base(base_url + '/archiv-filter')
+        return self.list_base(base_url + '/archiv')
+
+    def removeTags(self, text):
+            text = re.sub('<.*?>', '', text)
+            text = re.sub('[\r\n\t\0]', '', text)
+            text = re.sub('^[ ]+|[ ]+$', '', text)
+            return text
+
+    def liveInfo(self):
+        data_new = {}
+        url = 'https://live.joj.sk/'
+        data = util.request(url)
+        s = re.finditer(' <div class="col-xs-12 col-sm-6 col-md-4 i h-.">(?P<data>.*?<\/div>)[ \n]+<\/div>[ \n]+<\/div>', data, re.S)
+        if s:
+            for ss in s:
+                d = ss['data']
+                img, title, time = None, None, None
+                a = re.search('title="(?P<title>.*?)" .*?<img src="(?P<img>.*?)"', d, re.S)
+                if a:
+                    img, title = a.group('img'), a.group('title')
+
+                a = re.finditer('<h3 class="title">(?P<title>.*?)<\/h3>.*?<div class="time">(?P<time>.*?)<\/div>', d, re.S)
+                desc = ''
+                if a:
+                    for aa in a:
+                        desc += '%s: %s\n'%(aa['time'], self.removeTags( aa['title']) )
+                data_new[title] = {'img': img, 'title': title, 'desc': desc}
+        
+        img_joj24 = 'https://img.joj.sk/rx240/38a52c95-84ce-4c04-b70a-2289a9fd1541'
+        title = 'JOJ24'
+        data_new[title] = {'img': img_joj24, 'title': title, 'desc': ''}
+
+        img_joj24 = 'https://img.joj.sk/rx/d7254e8d-ffdd-44a6-b9cc-766e9e7cce6b'
+        title = 'JOJ Šport'
+        data_new[title] = {'img': img_joj24, 'title': title, 'desc': ''}
+
+        
+
+        return data_new
 
     def resolve(self, item, captcha_cb=None, select_cb=None):
         result = []
         item = item.copy()
         url = item['url']
         if url.endswith('live.html'):
-            channel = urlparse.urlparse(url).netloc.split('.')[0]
-            if channel in 'plus':
-                channel = 'jojplus'
-            channel_quality_map = {'joj': ('360', '540', '720'),
-                                   'jojplus': ('360', '540'),
-                                   'wau': ('360', '540')}
+            channel = urlparse(url).netloc.split('.')[0]
+            # sou = 'hls'
+            sou = 'andromeda'
+            # if channel in 'plus':
+            #     channel = 'jojplus'
+            # if channel == 'joj24':
+            #     channel = 'joj_news'
+                # sou = 'andromeda'            
+            channel_quality_map = {'joj': ('404', '720', '1080'),
+                                   'plus': ('404', '720', '1080'),
+                                   'wau': ('404', '720', '1080'),
+                                   'news': ('404', '720', '1080'),
+                                   'jojsport': ('540', '720', '1080')
+                                   }
+            # https://live.cdn.joj.sk/live/andromeda/nrsr/live.m3u8
             for quality in channel_quality_map[channel]:
                 item = self.video_item()
                 item['quality'] = quality + 'p'
-                item['url'] = 'https://nn.geo.joj.sk/live/hls/' + channel + '-' + quality + '.m3u8'
+                self.info(channel)
+                if channel == 'jojsport':
+                    item['url'] = 'https://nn.geo.joj.sk/huste/23b50fc7-3a41-43a8-bfdd-120f51203756/23b50fc7-3a41-43a8-bfdd-120f51203756/23b50fc7-3a41-43a8-bfdd-120f51203756-{}p/playlist.m3u8'.format(quality)
+                else:
+                    # item['url'] = 'https://live.cdn.joj.sk/live/' + sou + '/' + channel + '-' + quality + '.m3u8'
+                    item['url'] = 'https://live.cdn.joj.sk/live/{}/{}-{}.m3u8'.format(sou, channel, quality)
+                self.info(item)
+                # https://live.cdn.joj.sk/live/andromeda/joj-720.m3u8
+                # https://live.cdn.joj.sk/live/andromeda/plus-404.m3u8
                 result.append(item)
         else:
             data = util.request(url)
@@ -270,22 +402,23 @@ class JojContentProvider(ContentProvider):
             if not vdata:
                 vdata = util.substr(data, '<div style="position:relative !important;', '</div>')
             iframe_url = re.search('<iframe src="([^"]+)"', vdata).group(1)
-            #print 'iframe_url = ', iframe_url
-            player_str = urllib2.urlopen(iframe_url).read()
-            #print player_str
+            #print('iframe_url = ', iframe_url)
+            player_str = urllib.request.urlopen(iframe_url).read()
+            #print(player_str)
+            d_player_str = player_str.decode("utf-8")
 
-            labels_str = re.search(r'var labels = {(.+?)};', player_str, re.DOTALL).group(1)
-            #print 'labels:', labels_str
+            labels_str = re.search(r'var labels = {(.+?)};', d_player_str, re.DOTALL).group(1)
+            #print('labels:', labels_str)
             renditions = re.search(r'renditions: \[(.+?)\]', labels_str).group(1).replace("'","").replace('"', '').split(',')
-            #print 'renditions: ', renditions
+            #print('renditions: ', renditions)
 
-            settings_str = re.search(r'var settings = {(.+?)};', player_str, re.DOTALL).group(1)
-            #print 'settings:', settings_str
+            settings_str = re.search(r'var settings = {(.+?)};', d_player_str, re.DOTALL).group(1)
+            #print('settings:', settings_str)
             poster_url = re.search(r'poster: \[\"(.+?)\"[^\]]*\]', settings_str).group(1)
-            #print 'poster_url:', poster_url
+            #print('poster_url:', poster_url)
 
-            bitrates_str = re.search(r'var src = {(.+?)};', player_str, re.DOTALL).group(1)
-            #print 'bitrates:', bitrates_str
+            bitrates_str = re.search(r'var src = {(.+?)};', d_player_str, re.DOTALL).group(1)
+            #print('bitrates:', bitrates_str)
             bitrates_url = re.search(r'"mp4": \[(.+?)\]', bitrates_str, re.DOTALL).group(1)
             bitrates_url = bitrates_url.replace("'","").replace('\n','').replace(' ','').split(',')
             for idx, url in enumerate(bitrates_url):
