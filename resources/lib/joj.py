@@ -39,13 +39,15 @@ LIVE_URL = {"JOJ":      "http://joj.sk",
             "JOJ Plus": "http://plus.joj.sk",
             "WAU":      "http://wau.joj.sk",
             "JOJ24":    "https://joj24.noviny.sk/",
-            "JOJSport":    "https://jojsport.joj.sk/"}
+            "JOJSport":    "https://jojsport.joj.sk/",
+            "JOJ Cinema": "https://cinema.cz/"}
 
 JOJ_NAMES = {'JOJ': 'JOJ',
             'JOJ Plus': 'PLUS', 
             'WAU': 'WAU',
             'JOJ24': 'JOJ24',
-            'JOJSport': 'JOJ Šport'}
+            'JOJSport': 'JOJ Šport',
+            'JOJ Cinema': 'CINEMA'}
 
 class JojContentProvider(ContentProvider):
     def __init__(self, username=None, password=None, filter=None):
@@ -374,7 +376,8 @@ class JojContentProvider(ContentProvider):
                                    'plus': ('404', '720', '1080'),
                                    'wau': ('404', '720', '1080'),
                                    'news': ('404', '720', '1080'),
-                                   'jojsport': ('540', '720', '1080')
+                                   'jojsport': ('540', '720', '1080'),
+                                   'cinema': ('404', '720', '1080'),
                                    }
             # https://live.cdn.joj.sk/live/andromeda/nrsr/live.m3u8
             for quality in channel_quality_map[channel]:
