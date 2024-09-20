@@ -364,7 +364,7 @@ class JojContentProvider(ContentProvider):
                     channel = 'joj_news'
                 elif channel == 'jojsport':
                     channel = 'joj_sport'
-                item['url'] = f'https://live.cdn.joj.sk/live/{sou}/{channel}-{quality}.m3u8'
+                item['url'] = f'https://live.cdn.joj.sk/live/{sou}/{channel}-{quality}.m3u8|Referer=https://media.joj.sk'
                 self.info(item)
                 result.append(item)
         else:
