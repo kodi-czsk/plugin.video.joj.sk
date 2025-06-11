@@ -293,7 +293,7 @@ class JojContentProvider(ContentProvider):
 
             result.append(item)
 
-        oops = ' [COLOR FFFF4D4D](nefunkčné)[/COLOR]'
+        oops = '' # [COLOR FFFF4D4D](nefunkčné)[/COLOR]'
         result.append(self.dir_item("JOJ archív" + oops, BASE_URL["JOJ"]))
         result.append(self.dir_item("JOJ Plus archív" + oops, BASE_URL["JOJ Plus"]))
         result.append(self.dir_item("WAU archív" + oops, BASE_URL["WAU"]))
@@ -364,7 +364,7 @@ class JojContentProvider(ContentProvider):
                     channel = 'joj_news'
                 elif channel == 'jojsport':
                     channel = 'joj_sport'
-                item['url'] = f'https://live.cdn.joj.sk/live/{sou}/{channel}-{quality}.m3u8'
+                item['url'] = f'https://live.cdn.joj.sk/live/{sou}/{channel}-{quality}.m3u8|Referer=https://media.joj.sk'
                 self.info(item)
                 result.append(item)
         else:
