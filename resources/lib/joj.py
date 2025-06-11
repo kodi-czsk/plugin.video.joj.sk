@@ -293,7 +293,7 @@ class JojContentProvider(ContentProvider):
 
             result.append(item)
 
-        oops = ' [COLOR FFFF4D4D](nefunkčné)[/COLOR]'
+        oops = '' # [COLOR FFFF4D4D](nefunkčné)[/COLOR]'
         result.append(self.dir_item("JOJ archív" + oops, BASE_URL["JOJ"]))
         result.append(self.dir_item("JOJ Plus archív" + oops, BASE_URL["JOJ Plus"]))
         result.append(self.dir_item("WAU archív" + oops, BASE_URL["WAU"]))
@@ -397,7 +397,7 @@ class JojContentProvider(ContentProvider):
             bitrates_str = re.search(r'var src = {(.+?)};', d_player_str, re.DOTALL).group(1)
             #print('bitrates:', bitrates_str)
             bitrates_url = re.search(r'"mp4": \[(.+?)\]', bitrates_str, re.DOTALL).group(1)
-            bitrates_url = bitrates_url.replace("'","").replace('\n','').replace(' ','').split(',')
+            bitrates_url = bitrates_url.replace("'","").replace('\n','').replace(' ','').replace('"', '').split(',')
             for idx, url in enumerate(bitrates_url):
                 item = self.video_item()
                 item['img'] = poster_url
